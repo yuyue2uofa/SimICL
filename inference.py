@@ -40,8 +40,6 @@ from config import get_config
 from models import build_model_revised as build_model_revised
 
 
-# In[2]:
-
 
 parser = argparse.ArgumentParser(description='ICLMIM')
 parser.add_argument('--dataset_path', default = './visual_prompt/', type=str) #change
@@ -175,7 +173,7 @@ class SegmentationDataSet(data.Dataset):
 
 
 # model
-model = build_model_revised(config, is_pretrain=True)
+model = build_model_revised(config)
 model.to(device)
 
 PATH = args.save_dir + args.model_name
