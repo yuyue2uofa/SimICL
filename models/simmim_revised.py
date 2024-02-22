@@ -3,7 +3,7 @@
 # Copyright (c) 2021 Microsoft
 # Licensed under The MIT License 
 # Written by Zhenda Xie
-# Modification: added concatenated ground truth as input to SimMIM
+# Modification by Yuyue Zhou: added concatenated ground truth as input to SimMIM
 # --------------------------------------------------------
 
 from functools import partial
