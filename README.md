@@ -12,7 +12,7 @@ Based on our experiments, we found that (1) random masking ratio 0.3-0.75 is cru
 
 The experiment results demonstrated that (1) image reconstruction helped the model better understand image features, making the model achieving an excellent performance (2) model understood the support-query relationship.
 
-
+![Image text](https://github.com/yuyue2uofa/repository/master/SimICL/figures/figure1.pdf)
 ## To run this code：
 
 You need to prepare concatenated images/ground truth before running training code.
