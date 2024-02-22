@@ -15,7 +15,7 @@ The experiment results demonstrated that: with concatenated support examples and
 ![Image text](https://github.com/yuyue2uofa/SimICL/blob/main/figures/figure1.jpg)
 ## To run this code：
 
-You need to prepare concatenated images/ground truth before running training code.
+Please prepare concatenated images/ground truth before running training/inference code.
 
 ## Results
 
