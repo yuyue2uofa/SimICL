@@ -19,4 +19,4 @@ You need to prepare concatenated images/ground truth before running training cod
 
 ## Results
 
-Please find the trained weights [here](https://drive.google.com/file/d/1CJJiyNcC53chDeWVoqRgU493RyL3fWnX/view?usp=sharing). (The trained model with the best performance on wrist ultrasound dataset)
+Please find the trained weights [here](https://drive.google.com/file/d/1CJJiyNcC53chDeWVoqRgU493RyL3fWnX/view?usp=sharing). (The model with the best performance on wrist ultrasound dataset)
