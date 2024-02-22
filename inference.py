@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+
 # If there's a GPU available...
 import torch
 
@@ -37,20 +38,19 @@ import pickle
 import re
 from sklearn.metrics import confusion_matrix
 from config import get_config
-from models import build_model_revised as build_model_revised
+from models import build_model
 
 
-
-parser = argparse.ArgumentParser(description='ICLMIM')
-parser.add_argument('--dataset_path', default = './visual_prompt/', type=str) #change
+parser = argparse.ArgumentParser(description='SimICL')
+parser.add_argument('--dataset_path', default = './visual_prompt/', type=str) 
 parser.add_argument('--test_csv', default='./visual_prompt/val_test.csv', type=str)
-parser.add_argument('--save_dir', default = './results/1/', type=str) #change
+parser.add_argument('--save_dir', default = './results/', type=str) 
 parser.add_argument('--batch_size', type=int, default=1,
-                        help='batch size (default: 1)') #change
+                        help='batch size (default: 1)') 
+parser.add_argument('--norm_pix_loss', action='store_true',
+                        help='Use (per-patch) normalized pixels as targets for computing loss')
 parser.add_argument('--mask_ratio', default=0.6, type=float,
                         help='Masking ratio (percentage of removed patches).')
-parser.add_argument('--loss_selection', default=0, type=int,
-                        help='loss selection')
 parser.add_argument('--save_figure', default=False, type=bool,
                         help='save test prediction')
 parser.add_argument('--model_name', default='latest_model.pth', type=str,
@@ -62,13 +62,14 @@ parser.add_argument(
         default=None,
         nargs='+',
     )
-args = parser.parse_args() #change
+args = parser.parse_args() 
 
 config = get_config(args)
-print(args.save_dir)
 
 
 def evaluation_metrics(y_true, y_pred, smooth = 0.0001):
+    #y_true = y_true.detach().numpy()
+    #y_pred = y_pred.detach().numpy()
     y_true_f = y_true.flatten()
     y_pred_f = y_pred.flatten()
     intersection = np.sum(y_true_f * y_pred_f)
@@ -76,6 +77,8 @@ def evaluation_metrics(y_true, y_pred, smooth = 0.0001):
     dice = (2. * intersection + smooth) / (np.sum(y_true_f) + np.sum(y_pred_f) + smooth)
     jaccard = (intersection + smooth) / (np.sum(y_true_f) + np.sum(y_pred_f) + smooth - intersection)
     return(dice, jaccard)
+
+
 
 import math
 import random
@@ -134,7 +137,7 @@ class SegmentationDataSet(data.Dataset):
          
         self.mask_generator = MaskGenerator(
             input_size=224,
-            mask_patch_size=16, #change mask_patch_size from 32 to 16
+            mask_patch_size=16, 
             model_patch_size=16,
             mask_ratio=mask_ratio,
         )
@@ -146,25 +149,15 @@ class SegmentationDataSet(data.Dataset):
         image_filename = self.images_list[index]
         # Load input and target
         image = cv.imread(os.path.join(self.input_path, image_filename),0)
-        gt  = cv.imread(os.path.join(self.output_path, image_filename),0) #change: add gt 
-        
-        # padding
-        width = max(image.shape) - image.shape[1]  # pad 0 on width
-        height = max(image.shape) - image.shape[0]  # pad 0 on height
-        image = np.pad(image, ((0, height), (0, width)), 'constant', constant_values=(0, 0))
-        gt = np.pad(gt, ((0, height), (0, width)), 'constant', constant_values=(0, 0)) #change: add gt
+        gt  = cv.imread(os.path.join(self.output_path, image_filename),0)         
        
-        # Preprocessing
-        #image = cv.resize(image, (224,224))
-        #image = (image - np.min(image)) / np.ptp(image) #normalize
-
         # add: 3 channel
         image = np.repeat(image[None,...], 3, axis=0).transpose(1, 2, 0)
-        gt = np.repeat(gt[None,...], 3, axis=0).transpose(1, 2, 0) #change: add gt
+        gt = np.repeat(gt[None,...], 3, axis=0).transpose(1, 2, 0) 
         # add transform
         if self.transform:
             image = self.transform(np.uint8(image))
-            gt = self.transform(np.uint8(gt)) #change: add gt
+            gt = self.transform(np.uint8(gt))
 
             
         mask = self.mask_generator()
@@ -172,40 +165,43 @@ class SegmentationDataSet(data.Dataset):
         return image, mask, gt, image_filename
 
 
+
 # model
-model = build_model_revised(config)
+model = build_model(config)
 model.to(device)
 
 PATH = args.save_dir + args.model_name
-if os.path.exists(PATH): #if path exist
+if os.path.exists(PATH):
     model.load_state_dict(torch.load(PATH, map_location=torch.device('cpu')))
 else:
     print('no pretrained model found')
-print(PATH)
-print('mask ratio:',args.mask_ratio)
+
+
 
 test_transform = transforms.Compose([
         transforms.ToPILImage(),
-        transforms.Resize([224, 224]), #change: move horizontal flip
+        transforms.Resize([224, 224]), 
         transforms.ToTensor()])
 
-# Create test dataset
+# Create training dataset
 test_dataset = SegmentationDataSet(dataset_path = args.dataset_path, 
-                                       df_input = args.test_csv, mask_ratio = args.mask_ratio, transform = test_transform)
+                                       df_input = args.test_csv, mask_ratio = args.mask_ratio, transform = train_transform)
 
 
 test_dataloader = data.DataLoader(dataset=test_dataset,
                                       batch_size=args.batch_size,
-                                      shuffle = True)
+                                      shuffle = False)
+
 
 save_images = args.save_dir + 'test/'
+
 if not os.path.exists(save_images):
     os.makedirs(save_images)
     print("Folder created")
 else:
     print("Folder already exists")
 
-def eval_model(dataloader, model, save_path, selection):
+def eval_model(dataloader, model, save_path):
     eval_loss = 0
     model.eval()
     dices = []
@@ -215,16 +211,16 @@ def eval_model(dataloader, model, save_path, selection):
         i = 0
         for images, masks, gts, filename in dataloader:
             i += 1
-            images = images.cuda() #change cpu to cuda
+            images = images.cuda() 
             masks = masks.cuda()  
             gts = gts.cuda()
-            loss, rec = model(images, masks, gts) #add
-            images = images.cpu() #change cpu to cuda
+            loss, rec = model(images, masks, gts) 
+            images = images.cpu() 
             masks = masks.cpu()  
             gts = gts.cpu()
-            rec = rec.cpu() #change new
+            rec = rec.cpu() 
             eval_loss =+ loss.item()       
-            rand_size = 224//32
+
 
             masks = masks.numpy()
             mask = masks.reshape(14, 14)
@@ -252,7 +248,6 @@ def eval_model(dataloader, model, save_path, selection):
     return dices, jaccards
 
 
-dices, jaccards= eval_model(test_dataloader, model, save_images, args.loss_selection) # change new
-
+dices, jaccards= eval_model(training_dataloader, model, save_images) 
 print(sum(dices)/len(dices), sum(jaccards)/len(jaccards))
 
