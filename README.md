@@ -1,6 +1,6 @@
 # SimICL
 
-This is the repository of paper A Simple Framework for Visual In-context Learning  to Improve Ultrasound Segmentation.
+This is the repository of paper [A Simple Framework Uniting Visual In-context Learning with Masked Image Modeling to Improve Ultrasound Segmentation](https://arxiv.org/abs/2402.14300)
 
 Thanks to Zhenda Xie: code under "models" folder are mainly from Xie's paper: SimMIM: A Simple Framework for Masked Image Modeling, https://github.com/microsoft/SimMIM
 
