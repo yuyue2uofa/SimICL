@@ -21,8 +21,7 @@ from torch.utils import data
 import argparse
 import os
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
-from skimage.io import imread
-from skimage.transform import resize
+
 
 import torchvision
 import torchvision.transforms as transforms
@@ -32,10 +31,8 @@ import pandas as pd
 
 import cv2 as cv
 
-import glob
 
 import pickle
-import re
 from sklearn.metrics import confusion_matrix
 from config import get_config
 from models import build_model
@@ -80,7 +77,6 @@ def evaluation_metrics(y_true, y_pred, smooth = 0.0001):
 
 
 
-import math
 import random
 import numpy as np
 import torch
