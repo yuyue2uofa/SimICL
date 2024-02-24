@@ -13,47 +13,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from timm.models.layers import trunc_normal_
 
-from .swin_transformer import SwinTransformer
 from .vision_transformer import VisionTransformer
-
-
-class SwinTransformerForSimMIM(SwinTransformer):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        assert self.num_classes == 0
-
-        self.mask_token = nn.Parameter(torch.zeros(1, 1, self.embed_dim))
-        trunc_normal_(self.mask_token, mean=0., std=.02)
-
-    def forward(self, x, mask):
-        x = self.patch_embed(x)
-
-        assert mask is not None
-        B, L, _ = x.shape
-
-        mask_tokens = self.mask_token.expand(B, L, -1)
-        w = mask.flatten(1).unsqueeze(-1).type_as(mask_tokens)
-        x = x * (1. - w) + mask_tokens * w
-
-        if self.ape:
-            x = x + self.absolute_pos_embed
-        x = self.pos_drop(x)
-
-        for layer in self.layers:
-            x = layer(x)
-        x = self.norm(x)
-
-        x = x.transpose(1, 2)
-        B, C, L = x.shape
-        H = W = int(L ** 0.5)
-        x = x.reshape(B, C, H, W)
-        return x
-
-    @torch.jit.ignore
-    def no_weight_decay(self):
-        return super().no_weight_decay() | {'mask_token'}
-
 
 class VisionTransformerForSimMIM(VisionTransformer):
     def __init__(self, **kwargs):
@@ -136,26 +96,7 @@ class SimMIM(nn.Module):
 
 def build_simmim(config):
     model_type = config.MODEL.TYPE
-    if model_type == 'swin':
-        encoder = SwinTransformerForSimMIM(
-            img_size=config.DATA.IMG_SIZE,
-            patch_size=config.MODEL.SWIN.PATCH_SIZE,
-            in_chans=config.MODEL.SWIN.IN_CHANS,
-            num_classes=0,
-            embed_dim=config.MODEL.SWIN.EMBED_DIM,
-            depths=config.MODEL.SWIN.DEPTHS,
-            num_heads=config.MODEL.SWIN.NUM_HEADS,
-            window_size=config.MODEL.SWIN.WINDOW_SIZE,
-            mlp_ratio=config.MODEL.SWIN.MLP_RATIO,
-            qkv_bias=config.MODEL.SWIN.QKV_BIAS,
-            qk_scale=config.MODEL.SWIN.QK_SCALE,
-            drop_rate=config.MODEL.DROP_RATE,
-            drop_path_rate=config.MODEL.DROP_PATH_RATE,
-            ape=config.MODEL.SWIN.APE,
-            patch_norm=config.MODEL.SWIN.PATCH_NORM,
-            use_checkpoint=config.TRAIN.USE_CHECKPOINT)
-        encoder_stride = 32
-    elif model_type == 'vit':
+    if  model_type == 'vit':
         encoder = VisionTransformerForSimMIM(
             img_size=config.DATA.IMG_SIZE,
             patch_size=config.MODEL.VIT.PATCH_SIZE,
