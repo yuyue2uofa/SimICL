@@ -181,7 +181,7 @@ test_transform = transforms.Compose([
 
 # Create training dataset
 test_dataset = SegmentationDataSet(dataset_path = args.dataset_path, 
-                                       df_input = args.test_csv, mask_ratio = args.mask_ratio, transform = train_transform)
+                                       df_input = args.test_csv, mask_ratio = args.mask_ratio, transform = test_transform)
 
 
 test_dataloader = data.DataLoader(dataset=test_dataset,
@@ -244,6 +244,6 @@ def eval_model(dataloader, model, save_path):
     return dices, jaccards
 
 
-dices, jaccards= eval_model(training_dataloader, model, save_images) 
+dices, jaccards= eval_model(test_dataloader, model, save_images) 
 print(sum(dices)/len(dices), sum(jaccards)/len(jaccards))
 
